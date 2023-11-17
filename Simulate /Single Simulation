@@ -1,12 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from sympy import symbols, lambdify
 import copy
-from matplotlib.gridspec import GridSpec
-from matplotlib.animation import FuncAnimation
-import os
-import pickle as pkl
-
 
 def main():
     # Initializes the starting landscape parameters. Edit out the two you are not using.
@@ -45,13 +39,14 @@ def main():
     EC50_INT_BA= 25
     EC50_INT_AB= 25
 
-
-    x_conc = 150  #intial Drug 1 concentraction (between 0 to 200)
-    y_conc = 150 #intial Drug 2 concentraction (between 0 to 200)
-    eco_effect1 = 1
-    eco_effect2 = 1.3
-    eco_effect3 = 0.25
-    eco_effect4 = 1 #Ecological effect (<1 is positive game, =1 no game, >1 is negative game)
+    # Set the extent and resolution you want your drug-drug lanscape
+    a = np.linspace(0, 300, 1000) 
+    b = np.linspace(0, 300, 1000)
+    x, y = np.meshgrid(a, b)
+    
+    x_conc = 150  #intial Drug 1 concentraction (between 0 to max(a))
+    y_conc = 150 #intial Drug 2 concentraction (between 0 to max(b))
+    eco_effect1 = 1  #Ecological interaction parameter between mutants and ancestor ( =1 no interaction, <1 positive interaction, >1 negative interaction)
     timesteps = 400  #Number of time intervals to simulate over
     popsize = 100  #Number of mutant populations
     time = 200      #total time to simulate over
@@ -69,18 +64,11 @@ def main():
     # Variance is anti-correlated
     cov4 = [[0.3,-0.25],[-0.25,0.3]]
 
-    # Set the extent and resolution you want your drug-drug lanscape
-    a = np.linspace(0, 300, 1000) 
-    b = np.linspace(0, 300, 1000)
-    x, y = np.meshgrid(a, b)
-
-    #Create an instance of the class
+    #Create an instance of the class to simulate results based off above starting parameters
     example_DL = DrugLandscape(INT_AB, INT_BA, H_A, H_B, EC50_A, EC50_B, EC50_INT_BA, EC50_INT_AB)
     data = example_DL.simulate([1,1], eco_effect3, cov, timesteps, popsize, time, mutantfreq, x_conc, y_conc)
     datas = []
     datas.extend([data])
-        
-    plt.show()
 
 class DrugLandscape:
     def __init__(self, INT_AB, INT_BA, H_A, H_B, EC50_A, EC50_B, EC50_INT_BA, EC50_INT_AB):
@@ -160,8 +148,8 @@ class DrugLandscape:
         #Creates arrays to store simulated values
         #Rows correspond to mutant subpopulations
         #Columns correspond to the number of time increments
-        t = np.linspace(0,time,timesteps)
-        dt = (t[1]- t[0])/2                 #Can adjust differentiation parameter as necessary: used to calculate derivative using np.gradient below
+        t = np.linspace(0,time,timesteps)                    #Not used in simulation, stored later on for plotting
+        dt = (t[1]- t[0])/2                                  #Can adjust differentiation parameter as necessary: used to calculate time-derivative using np.gradient below
         alpha = np.zeros((popsize, timesteps))
         beta = np.zeros((popsize, timesteps))
         pop = np.zeros((popsize, timesteps))
@@ -208,7 +196,7 @@ class DrugLandscape:
 
         
         #Calculates the time-derivative of each mutant's trajectory on the landscape
-        #Ancestor set to 0
+        #Ancestor set to 0 (position on landscape does not change)
         for i in range(popsize-1):
             for j in range(timesteps):
                 der_x[i+1,j] = x_D[i+1]*(eco_effect-1)*fracsens[j]*(growth2[0,j]- growth1.sum(axis=0)[j])
@@ -225,7 +213,7 @@ class DrugLandscape:
         d_y = d_y.sum(axis=0)
         
         
-        #Calulates the integral of the mean alpha and beta to recover the mean trajectory
+        #Calulates the integral of the mean alpha and beta to recover the mean trajectory (integration constant is always 1)
         int_der_x = np.ones(timesteps)  
         int_der_y = np.ones(timesteps)
         
@@ -234,7 +222,7 @@ class DrugLandscape:
             int_der_y[j] = int_der_y[j-1] + d_y[j]
         
 
-        #Calculates the gradients the mean alpha and beta based on 
+        #Calculates the gradients the mean alpha and beta based on simulated values
         deri_x = np.gradient(alpha.sum(axis=0), dt)
         deri_y = np.gradient(beta.sum(axis=0), dt)
 
