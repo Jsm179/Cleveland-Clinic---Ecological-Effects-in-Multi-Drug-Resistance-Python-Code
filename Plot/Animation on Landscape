@@ -1,0 +1,59 @@
+from matplotlib.gridspec import GridSpec
+from matplotlib.animation import FuncAnimation
+
+#Creates a figure to plot landscape on
+#Creates arrays to store mutant simulation data for the animation
+fig = plt.figure(figsize=(10,10))
+gs = GridSpec(nrows=20, ncols=20)
+ax = fig.add_subplot(gs[:,:])
+points1 = bx.scatter([], [])
+points2 = bx.scatter([], [])
+
+#Sets the sizes of mutants on landscape to 0 once small enough
+def calculate_sizes(frequencies):
+                max_size = 1000  
+                sizes = max_size * frequencies
+                sizes[sizes < 10**-10] = 0
+                return sizes
+
+def update(frame):     
+            #Calculates the trajectory at each timestep
+            x_points1 = alpha1[:, :frame].sum(axis=0)
+            y_points1 = beta1[:, :frame].sum(axis=0)
+
+            #Gets the position and frequency of each mutant at each timestep
+            #Size of mutants dot corresponds to its frequency
+            #Mutant with the highest growth value on the landscape at the corresponding timestep is colored white
+            x_points2 = eff_x[:, frame]
+            y_points2 = eff_y[:, frame]
+            freq1 = freq1[:,frame]
+            sizes1 = calculate_sizes(freq1)
+            growth_values1 = [self.f(x*x_conc, y*y_conc) for x, y in zip(x_points2, y_points2)]
+            most_fit_index1 = np.argmax(growth_values1)
+            colors1 = ['black'] * len(x_points2)
+            colors1[most_fit_index1] = 'red'
+
+          
+            #Saves the points trajectory points as blue
+            #Saves the position and sizes of mutants
+            points1.set_color('blue')
+            points1.set_offsets(np.c_[x_points1, y_points1])
+            points2.set_sizes(sizes1)
+            points2.set_color(colors1)
+            points2.set_offsets(np.c_[x_points2, y_points2])
+            
+
+            return points1, points2,
+        #Animates the simulation to show the dynamic movements of mutants on the landscape
+        animation = FuncAnimation(fig2, update, frames=timesteps, interval=75) 
+
+        #Creates the landscape with an isogrowth line where the growth rate is 0.5
+        contour1 = ax.contour(a / x_conc, b / y_conc, self.k, levels=[0.5], colors='white')
+        ax.imshow(self.k, extent=[0, 300 / x_conc, 300 / y_conc, 0], aspect='auto')
+        ax.invert_yaxis()
+        ax.set_xlabel('Alpha')
+        ax.set_ylabel('Beta')
+
+
+        animation.save('Path to save file', writer='pillow', fps=10)  # Adjust the writer and fps as needed
+      
